@@ -1,8 +1,5 @@
 package com.futurecomes.neo.wallet;
 
-import com.futurecomes.neo.wallet.exceptions.InvalidAddressException;
-import com.futurecomes.neo.wallet.exceptions.InvalidPrivateKeyException;
-import com.futurecomes.neo.wallet.exceptions.InvalidScriptHashException;
 import com.futurecomes.neo.wallet.behavior.NEP5SendBehaviorImpl;
 import com.futurecomes.neo.wallet.behavior.SendBehavior;
 import com.futurecomes.neo.wallet.behavior.AssetSendBehaviorImpl;
@@ -22,10 +19,10 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.security.KeyPair;
 
-public class Wallet implements SendBehavior {
+public class Transaction implements SendBehavior {
     private SendBehavior sendBehavior;
 
-    private Wallet(Builder builder) {
+    private Transaction(Builder builder) {
         if (builder.assetId != null) {
             this.sendBehavior = new AssetSendBehaviorImpl(
                     builder.neow3j,
@@ -139,7 +136,7 @@ public class Wallet implements SendBehavior {
             return this;
         }
 
-        public Wallet build() {
+        public Transaction build() {
             if (neow3j == null) {
                 throw new IllegalStateException("Node URL not set");
             }
@@ -156,14 +153,14 @@ public class Wallet implements SendBehavior {
                 throw new IllegalStateException("Amount not set");
             }
 
-            return new Wallet(this);
+            return new Transaction(this);
         }
 
         private byte[] privateKeyFromWIF(String wif) {
             try {
                 return WIF.getPrivateKeyFromWIF(wif);
             } catch (IllegalArgumentException e) {
-                throw new InvalidPrivateKeyException("Invalid WIF", e);
+                throw new IllegalArgumentException("Invalid WIF", e);
             }
         }
 
@@ -171,7 +168,7 @@ public class Wallet implements SendBehavior {
             try {
                 return new ScriptHash(hexScriptHash);
             } catch (IllegalArgumentException e) {
-                throw new InvalidScriptHashException("Invalid ScriptHash", e);
+                throw new IllegalArgumentException("Invalid ScriptHash", e);
             }
         }
 
@@ -179,7 +176,7 @@ public class Wallet implements SendBehavior {
             try {
                 Base58.base58CheckDecode(address);
             } catch (IllegalArgumentException e) {
-                throw new InvalidAddressException("Invalid address", e);
+                throw new IllegalArgumentException("Invalid address", e);
             }
         }
 

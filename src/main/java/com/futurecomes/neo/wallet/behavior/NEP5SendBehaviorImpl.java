@@ -59,7 +59,6 @@ public class NEP5SendBehaviorImpl extends AbstractSendBehavior {
     }
 
     private int getDecimals(ScriptHash scriptHash) throws IOException, ErrorResponseException {
-        // todo: check than nep5 exists
         InvocationResult invocationResult = new ContractInvocation.Builder(neow3j)
                 .contractScriptHash(scriptHash)
                 .function(DECIMALS)
@@ -67,7 +66,7 @@ public class NEP5SendBehaviorImpl extends AbstractSendBehavior {
                 .testInvoke();
 
         if (isInvocationNotOk(invocationResult)) {
-            // todo
+            throw new IllegalArgumentException("The specified ScriptHash is not a NEP5 contract");
         }
 
         return invocationResult
@@ -79,7 +78,6 @@ public class NEP5SendBehaviorImpl extends AbstractSendBehavior {
     }
 
     private BigInteger getBalance(ScriptHash scriptHash, String address) throws IOException, ErrorResponseException {
-        // todo: check nep5 balance
         InvocationResult invocationResult = new ContractInvocation.Builder(neow3j)
                 .contractScriptHash(scriptHash)
                 .function(BALANCE)
@@ -88,7 +86,7 @@ public class NEP5SendBehaviorImpl extends AbstractSendBehavior {
                 .testInvoke();
 
         if (isInvocationNotOk(invocationResult)) {
-            // todo
+            throw new IllegalArgumentException("The specified ScriptHash is not a NEP5 contract");
         }
 
         return invocationResult
