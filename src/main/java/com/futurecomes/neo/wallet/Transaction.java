@@ -140,7 +140,7 @@ public class Transaction implements SendBehavior {
             if (neow3j == null) {
                 throw new IllegalStateException("Node URL not set");
             }
-            if (assetId == null || nep5ScriptHash == null) {
+            if (assetId == null && nep5ScriptHash == null) {
                 throw new IllegalStateException("Asset not set");
             }
             if (fromAccount == null) {
