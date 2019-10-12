@@ -4,7 +4,10 @@ import io.neow3j.contract.ContractInvocation;
 import io.neow3j.contract.ContractParameter;
 import io.neow3j.contract.ScriptHash;
 import io.neow3j.protocol.Neow3j;
+import io.neow3j.protocol.core.methods.response.ByteArrayStackItem;
+import io.neow3j.protocol.core.methods.response.IntegerStackItem;
 import io.neow3j.protocol.core.methods.response.InvocationResult;
+import io.neow3j.protocol.core.methods.response.StackItem;
 import io.neow3j.protocol.exceptions.ErrorResponseException;
 import io.neow3j.wallet.Account;
 import io.neow3j.wallet.exceptions.InsufficientFundsException;
@@ -32,10 +35,8 @@ public class NEP5SendBehaviorImpl extends AbstractSendBehavior {
         int decimals = getDecimals(scriptHash);
         BigInteger satoshiAmount = toSatoshi(amount, decimals);
         BigInteger satoshiBalance = getBalance(scriptHash, fromAccount.getAddress());
-        if (satoshiBalance.compareTo(satoshiAmount) < 0) {
-            throw new InsufficientFundsException("Needed " + amount + " but only found " +
-                    fromSatoshi(satoshiBalance, decimals) + " for NEP5 token " + scriptHash);
-        }
+        checkBalance(fromSatoshi(satoshiBalance, decimals), amount);
+
         return new ContractInvocation.Builder(neow3j)
                 .contractScriptHash(scriptHash)
                 .function(TRANSFER)
@@ -65,16 +66,7 @@ public class NEP5SendBehaviorImpl extends AbstractSendBehavior {
                 .build()
                 .testInvoke();
 
-        if (isInvocationNotOk(invocationResult)) {
-            throw new IllegalArgumentException("The specified ScriptHash is not a NEP5 contract");
-        }
-
-        return invocationResult
-                .getStack()
-                .get(0)
-                .asInteger()
-                .getValue()
-                .intValue();
+        return getBigIntegerFromResult(invocationResult).intValue();
     }
 
     private BigInteger getBalance(ScriptHash scriptHash, String address) throws IOException, ErrorResponseException {
@@ -85,20 +77,31 @@ public class NEP5SendBehaviorImpl extends AbstractSendBehavior {
                 .build()
                 .testInvoke();
 
-        if (isInvocationNotOk(invocationResult)) {
-            throw new IllegalArgumentException("The specified ScriptHash is not a NEP5 contract");
-        }
-
-        return invocationResult
-                .getStack()
-                .get(0)
-                .asInteger()
-                .getValue();
+        return getBigIntegerFromResult(invocationResult);
     }
 
-    private boolean isInvocationNotOk(InvocationResult invocationResult) {
-        boolean isNotHalted = !invocationResult.getState().contains(HALT);
-        boolean isStackEmpty = invocationResult.getStack().isEmpty();
-        return isNotHalted || isStackEmpty;
+    private boolean isInvocationOk(InvocationResult invocationResult) {
+        boolean isHalted = invocationResult.getState().contains(HALT);
+        boolean isStackNotEmpty = !invocationResult.getStack().isEmpty();
+        return isHalted && isStackNotEmpty;
+    }
+
+    private BigInteger getBigIntegerFromResult(InvocationResult invocationResult) {
+        if (isInvocationOk(invocationResult)) {
+            StackItem stackItem = invocationResult.getStack().get(0);
+            if (stackItem instanceof IntegerStackItem) {
+                return ((IntegerStackItem) stackItem).getValue();
+            } else if (stackItem instanceof ByteArrayStackItem) {
+                return stackItem.asByteArray().getAsNumber();
+            }
+        }
+        throw new IllegalArgumentException("The specified ScriptHash is not a NEP5 contract");
+    }
+
+    private void checkBalance(BigDecimal balance, BigDecimal amount) {
+        if (balance.compareTo(amount) < 0) {
+            throw new InsufficientFundsException("Needed " + amount + " but only found " +
+                    balance + " for NEP5 token " + scriptHash);
+        }
     }
 }
